@@ -1,0 +1,2627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bitewise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Firebase SDKs (loaded for Google sign-in) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0b09;
+      --surface: #181510;
+      --surface2: #201c16;
+      --border: #2c2720;
+      --text: #ede7d5;
+      --text-muted: #7a7063;
+      --text-soft: #b5a98a;
+      --gold: #c9a96e;
+      --gold-light: rgba(201,169,110,0.10);
+      --gold-dim: #9a7d4f;
+      --radius: 14px;
+      --radius-sm: 9px;
+      --shadow: 0 4px 32px rgba(0,0,0,0.45);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      padding-bottom: 88px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      padding: 22px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    header h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: 0.2px;
+    }
+    header h1 span { color: var(--gold); }
+    .header-date {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 300;
+      letter-spacing: 0.4px;
+    }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 13px 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-family: inherit;
+      transition: color 0.2s;
+    }
+    .nav-btn.active { color: var(--gold); }
+    .nav-btn svg { width: 22px; height: 22px; stroke-width: 1.5; fill: none; stroke: currentColor; }
+    .nav-label { font-size: 10px; font-weight: 500; letter-spacing: 0.6px; text-transform: uppercase; }
+
+    /* ── PANELS ── */
+    .panel { display: none; padding: 24px; }
+    .panel.active { display: block; }
+
+    /* ── TYPOGRAPHY ── */
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 21px;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+    .section-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 300;
+      margin-bottom: 22px;
+      line-height: 1.5;
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gold-dim);
+      margin-bottom: 10px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card + .card { margin-top: 14px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 12px 22px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s;
+      letter-spacing: 0.2px;
+    }
+    .btn-gold { background: var(--gold); color: #0c0b09; }
+    .btn-gold:hover { background: #d4b57a; }
+    .btn-gold:active { transform: scale(0.97); }
+    .btn-outline {
+      background: transparent;
+      color: var(--text-soft);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-ghost {
+      background: var(--gold-light);
+      color: var(--gold);
+      border: 1px solid rgba(201,169,110,0.18);
+    }
+    .btn-ghost:hover { background: rgba(201,169,110,0.18); }
+    .btn-sm { padding: 8px 16px; font-size: 13px; }
+    .btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── INPUTS ── */
+    textarea, input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+    }
+    textarea:focus, input:focus { border-color: rgba(201,169,110,0.5); }
+    textarea::placeholder, input::placeholder { color: var(--text-muted); }
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* ── DIVIDERS ── */
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+    .divider-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0 16px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+    }
+    .divider-label::before, .divider-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── RECIPE BOOK ── */
+    .describe-box { min-height: 96px; margin-bottom: 12px; }
+    .action-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .action-row-left { display: flex; gap: 8px; }
+
+    .photo-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .photo-thumb {
+      width: 68px; height: 68px; border-radius: 10px;
+      object-fit: cover; border: 1px solid var(--border);
+    }
+
+    /* Generated recipe */
+    .recipe-result { display: none; margin-top: 16px; }
+    .recipe-result.visible { display: block; }
+
+    .recipe-name-field {
+      font-family: 'Playfair Display', serif;
+      font-size: 21px;
+      font-weight: 400;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      border-radius: 0;
+      padding: 4px 0 10px;
+      margin-bottom: 18px;
+      color: var(--text);
+      width: 100%;
+    }
+    .recipe-name-field:focus { border-bottom-color: var(--gold); outline: none; }
+
+    .ingredient-list { list-style: none; display: flex; flex-direction: column; }
+    .ingredient-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 300;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .ingredient-item:last-child { border-bottom: none; }
+    .ingredient-qty { font-size: 12px; color: var(--gold); font-weight: 500; min-width: 64px; }
+
+    .step-list { list-style: none; display: flex; flex-direction: column; }
+    .step-item {
+      display: flex;
+      gap: 14px;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-soft);
+      line-height: 1.65;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-item:last-child { border-bottom: none; }
+    .step-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 19px;
+      color: var(--gold);
+      line-height: 1.2;
+      min-width: 22px;
+      flex-shrink: 0;
+    }
+
+    /* Library entry card on main page */
+    .library-entry {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .library-entry:hover { border-color: rgba(201,169,110,0.4); }
+    .library-entry:active { transform: scale(0.99); }
+    .library-icon {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--gold-light);
+      border: 1px solid rgba(201,169,110,0.25);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .library-icon svg { width: 20px; height: 20px; stroke: var(--gold); fill: none; stroke-width: 1.5; }
+    .library-text { flex: 1; }
+    .library-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .library-sub { font-size: 12px; color: var(--text-muted); font-weight: 300; }
+    .library-arrow svg { width: 16px; height: 16px; stroke: var(--text-muted); fill: none; stroke-width: 2; }
+
+    /* Recipe meta editor (category + time before save) */
+    .meta-row { display: flex; gap: 10px; margin-bottom: 18px; }
+    .meta-field { flex: 1; }
+    .meta-field select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a96e'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 30px;
+    }
+    .meta-field select:focus { border-color: rgba(201,169,110,0.5); }
+
+    /* Library view */
+    .library-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--text-soft);
+      cursor: pointer;
+      padding: 6px;
+      margin-left: -6px;
+      display: flex;
+      align-items: center;
+    }
+    .back-btn:hover { color: var(--gold); }
+    .back-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .library-title-h {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: var(--text);
+    }
+    .library-count {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    .filter-section { margin-bottom: 18px; }
+    .filter-eyebrow {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .chip-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      padding: 7px 14px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      letter-spacing: 0.2px;
+    }
+    .chip:hover { border-color: rgba(201,169,110,0.4); color: var(--text-soft); }
+    .chip.active {
+      background: var(--gold);
+      color: #0c0b09;
+      border-color: var(--gold);
+    }
+
+    .ingredient-search {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .ingredient-search:focus { border-color: rgba(201,169,110,0.5); }
+    .ingredient-search::placeholder { color: var(--text-muted); }
+
+    .clear-filters {
+      background: none;
+      border: none;
+      color: var(--gold-dim);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      padding: 4px 0;
+    }
+    .clear-filters:hover { color: var(--gold); }
+
+    .recipe-card-tags {
+      display: flex;
+      gap: 6px;
+      margin-top: 5px;
+    }
+    .meta-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 500;
+      background: var(--gold-light);
+      color: var(--gold);
+      border: 1px solid rgba(201,169,110,0.18);
+      letter-spacing: 0.2px;
+    }
+
+    /* Saved recipe cards */
+    .recipes-list { display: flex; flex-direction: column; gap: 11px; }
+    .recipe-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .recipe-card:hover { border-color: rgba(201,169,110,0.35); background: var(--surface2); }
+    .recipe-card-thumb {
+      width: 54px; height: 54px;
+      border-radius: 10px;
+      background: var(--surface2);
+      flex-shrink: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .recipe-card-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .recipe-card-body { flex: 1; min-width: 0; }
+    .recipe-card-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .recipe-card-meta { font-size: 12px; color: var(--text-muted); font-weight: 300; }
+    .recipe-card-arrow { color: var(--text-muted); flex-shrink: 0; }
+    .recipe-card-arrow svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* ── FOOD LOG ── */
+    .cal-hero {
+      text-align: center;
+      padding: 28px 20px 20px;
+    }
+    .cal-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 58px;
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1;
+    }
+    .cal-number sup { font-size: 20px; color: var(--text-muted); vertical-align: super; font-family: 'Inter', sans-serif; font-weight: 300; }
+    .cal-label { font-size: 13px; color: var(--text-muted); font-weight: 300; margin-top: 6px; margin-bottom: 18px; letter-spacing: 0.3px; }
+
+    .progress-track {
+      height: 2px;
+      background: var(--border);
+      border-radius: 2px;
+      max-width: 180px;
+      margin: 0 auto 6px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 2px;
+      transition: width 0.6s ease;
+    }
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      max-width: 180px;
+      margin: 0 auto;
+    }
+
+    .macro-row { display: flex; gap: 10px; margin-bottom: 22px; }
+    .macro-pill {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .macro-val { font-size: 18px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+    .macro-val span { font-size: 11px; color: var(--text-muted); font-weight: 300; }
+    .macro-name { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+
+    /* Upload */
+    .upload-area {
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      margin-bottom: 0;
+    }
+    .upload-area:hover { border-color: rgba(201,169,110,0.4); }
+    .upload-area svg { width: 30px; height: 30px; stroke: var(--text-muted); fill: none; stroke-width: 1.2; margin-bottom: 10px; }
+    .upload-area p { font-size: 13px; color: var(--text-muted); font-weight: 300; }
+    .upload-area strong { color: var(--gold); font-weight: 500; }
+
+    /* Analysis */
+    .analysis-result { display: none; }
+    .analysis-result.visible { display: block; }
+    .analysis-img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+    .analysis-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 21px;
+      margin-bottom: 3px;
+    }
+    .analysis-conf { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+    .cal-big {
+      font-family: 'Playfair Display', serif;
+      font-size: 42px;
+      font-weight: 400;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .cal-big span { font-size: 15px; color: var(--text-muted); font-family: 'Inter', sans-serif; font-weight: 300; }
+
+    /* Meal entries */
+    .meals-list { display: flex; flex-direction: column; gap: 10px; }
+    .meal-entry {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 13px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .meal-thumb {
+      width: 50px; height: 50px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      overflow: hidden;
+    }
+    .meal-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .meal-body { flex: 1; min-width: 0; }
+    .meal-name { font-size: 14px; font-weight: 400; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meal-meta { font-size: 11px; color: var(--text-muted); font-weight: 300; }
+    .meal-cal { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--gold); flex-shrink: 0; text-align: right; }
+    .meal-cal span { display: block; font-size: 10px; color: var(--text-muted); font-family: 'Inter', sans-serif; font-weight: 300; }
+
+    /* Loading */
+    .loading-dots { display: inline-flex; gap: 5px; align-items: center; }
+    .loading-dots span {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: bounce 1.2s infinite;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+      40% { transform: translateY(-7px); opacity: 1; }
+    }
+    .loading-block { display: none; padding: 28px; text-align: center; }
+    .loading-block.visible { display: block; }
+    .loading-block p { font-size: 13px; color: var(--text-muted); font-weight: 300; font-style: italic; margin-top: 10px; }
+
+    /* Empty */
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+    .empty-state .empty-icon { font-size: 34px; margin-bottom: 12px; opacity: 0.45; }
+    .empty-state p { font-size: 14px; font-weight: 300; }
+
+    /* Sheet / bottom drawer */
+    .sheet-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .sheet-overlay.open { display: flex; }
+    .sheet {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      border-top: 1px solid var(--border);
+      padding: 0 24px 48px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 86vh;
+      overflow-y: auto;
+    }
+    .sheet-handle { width: 36px; height: 3px; background: var(--border); border-radius: 3px; margin: 14px auto 22px; }
+
+    /* Date navigator */
+    .date-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 6px;
+    }
+    .date-arrow {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 50%;
+      transition: color 0.15s, background 0.15s;
+    }
+    .date-arrow:hover:not(:disabled) { color: var(--gold); background: var(--gold-light); }
+    .date-arrow:disabled { opacity: 0.25; cursor: not-allowed; }
+    .date-arrow svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; display: block; }
+    .date-display {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      color: var(--text);
+      letter-spacing: 0.3px;
+      min-width: 130px;
+      text-align: center;
+    }
+    .today-jump {
+      display: block;
+      margin: 8px auto 0;
+      background: none;
+      border: none;
+      color: var(--gold-dim);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .today-jump:hover { color: var(--gold); }
+
+    /* Trend chart */
+    .trend-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow);
+    }
+    .trend-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .trend-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      color: var(--text);
+    }
+    .trend-avg {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+    .trend-avg strong { color: var(--gold); font-weight: 500; }
+
+    .trend-chart {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 6px;
+      height: 90px;
+      margin-bottom: 8px;
+    }
+    .trend-bar {
+      flex: 1;
+      background: var(--surface2);
+      border-radius: 4px 4px 2px 2px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.15s;
+      min-height: 3px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .trend-bar:hover { background: var(--gold-light); }
+    .trend-bar.selected .trend-bar-fill { background: var(--gold); }
+    .trend-bar.over .trend-bar-fill { background: #c97c5c; }
+    .trend-bar-fill {
+      width: 100%;
+      background: var(--gold-dim);
+      border-radius: 4px 4px 2px 2px;
+      transition: height 0.5s ease, background 0.2s;
+    }
+    .trend-bar-val {
+      position: absolute;
+      top: -16px;
+      font-size: 9px;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .trend-bar:hover .trend-bar-val,
+    .trend-bar.selected .trend-bar-val { opacity: 1; color: var(--gold); }
+    .trend-labels {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .trend-label {
+      flex: 1;
+      text-align: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+    .trend-label.selected { color: var(--gold); font-weight: 500; }
+
+    /* History list inside sheet */
+    .history-day {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 4px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .history-day:hover { background: var(--surface2); }
+    .history-day:last-child { border-bottom: none; }
+    .history-date {
+      flex: 1;
+      min-width: 0;
+    }
+    .history-date-main {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .history-date-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+    .history-cal {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      color: var(--gold);
+      text-align: right;
+    }
+    .history-cal span { font-size: 10px; color: var(--text-muted); font-family: 'Inter', sans-serif; font-weight: 300; display: block; }
+    .history-cal.over { color: #c97c5c; }
+    .history-empty {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 300;
+    }
+
+    .view-all-link {
+      display: block;
+      margin: -10px auto 18px;
+      background: none;
+      border: none;
+      color: var(--gold-dim);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .view-all-link:hover { color: var(--gold); }
+
+    /* ── LOGIN SCREEN ── */
+    .login-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 32px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .login-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 44px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .login-brand span { color: var(--gold); }
+    .login-tagline {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 15px;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .login-divider {
+      width: 40px;
+      height: 1px;
+      background: var(--gold);
+      margin: 28px 0;
+      opacity: 0.5;
+    }
+    .login-welcome {
+      font-size: 14px;
+      color: var(--text-soft);
+      font-weight: 300;
+      text-align: center;
+      max-width: 280px;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+    .google-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 24px;
+      background: #fff;
+      color: #1a1a1a;
+      border: none;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s;
+      letter-spacing: 0.2px;
+      box-shadow: 0 2px 14px rgba(255,255,255,0.08);
+    }
+    .google-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,255,255,0.12); }
+    .google-btn:active { transform: translateY(0); }
+    .google-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    .guest-link {
+      margin-top: 22px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 400;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .guest-link:hover { color: var(--gold); }
+
+    .login-footer {
+      position: absolute;
+      bottom: 32px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 300;
+      letter-spacing: 0.4px;
+      text-align: center;
+    }
+    .login-footer a { color: var(--gold-dim); text-decoration: none; }
+
+    /* User chip in header */
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 4px 10px 4px 4px;
+      border-radius: 50px;
+      transition: background 0.15s;
+    }
+    .user-chip:hover { background: var(--surface2); }
+    .user-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--gold-light);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 600;
+      overflow: hidden;
+    }
+    .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .user-name { font-size: 12px; color: var(--text-muted); font-weight: 400; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .signout-row {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .signout-row .user-avatar { width: 40px; height: 40px; font-size: 16px; }
+
+    /* Edit-mode rows */
+    .edit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .edit-ing-row, .edit-step-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    .edit-ing-row input.qty {
+      width: 90px;
+      flex-shrink: 0;
+      padding: 9px 10px;
+      font-size: 13px;
+    }
+    .edit-ing-row input.name, .edit-step-row textarea {
+      flex: 1;
+      padding: 9px 10px;
+      font-size: 13px;
+    }
+    .edit-step-row textarea { min-height: 56px; }
+    .edit-step-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      color: var(--gold);
+      flex-shrink: 0;
+      width: 22px;
+      padding-top: 6px;
+      text-align: center;
+    }
+    .row-delete {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 8px;
+      font-size: 16px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .row-delete:hover { color: #c97c5c; }
+    .add-row-btn {
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 9px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      width: 100%;
+      transition: all 0.15s;
+      margin-bottom: 18px;
+    }
+    .add-row-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    .edit-photo-area {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .edit-photo-thumb {
+      width: 80px; height: 80px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .edit-photo-empty {
+      width: 80px; height: 80px;
+      border-radius: 10px;
+      border: 1px dashed var(--border);
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 24px;
+      color: var(--text-muted);
+    }
+    .edit-photo-actions { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 96px;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 11px 22px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transition: all 0.28s;
+      white-space: nowrap;
+      z-index: 300;
+      letter-spacing: 0.2px;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div class="login-screen" id="loginScreen" style="display:none;">
+    <div class="login-brand">Bite<span>wise</span></div>
+    <div class="login-tagline">cook with intention · eat with awareness</div>
+    <div class="login-divider"></div>
+    <div class="login-welcome">Sign in to sync your recipes and food log across all your devices.</div>
+    <button class="google-btn" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+        <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <button class="guest-link" onclick="continueAsGuest()">Continue without an account</button>
+    <div class="login-footer">Recipes &amp; meals stay private to you</div>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <h1>Bite<span>wise</span></h1>
+    <div id="headerRight">
+      <span class="header-date" id="headerDate"></span>
+    </div>
+  </header>
+
+  <!-- ══ RECIPE BOOK PANEL ══ -->
+  <div class="panel active" id="panel-recipes">
+    <div class="section-sub">Describe how you made it — let AI do the rest</div>
+
+    <div class="card">
+      <label>Describe your dish</label>
+      <textarea class="describe-box" id="describeInput" placeholder="e.g. I made a creamy garlic pasta with leftover rotisserie chicken, lots of parmesan, cherry tomatoes, and fresh basil from my garden…"></textarea>
+      <div class="action-row">
+        <div class="action-row-left">
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('photoInput').click()">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+            Photo
+          </button>
+          <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="handlePhotoAttach(event)">
+        </div>
+        <button class="btn btn-gold btn-sm" id="generateBtn" onclick="generateRecipe()">
+          <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Generate
+        </button>
+      </div>
+      <div class="photo-preview" id="attachedPhotos"></div>
+    </div>
+
+    <!-- Loading -->
+    <div class="card loading-block" id="recipeLoading">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <p>Crafting your recipe…</p>
+    </div>
+
+    <!-- Generated result -->
+    <div class="card recipe-result" id="recipeResult">
+      <input class="recipe-name-field" id="recipeName" type="text" placeholder="Recipe name">
+
+      <div class="meta-row">
+        <div class="meta-field">
+          <label style="margin-bottom:6px;">Category</label>
+          <select id="recipeCategory">
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Dinner">Dinner</option>
+            <option value="Snack">Snack</option>
+            <option value="Dessert">Dessert</option>
+            <option value="Appetizer">Appetizer</option>
+            <option value="Side">Side</option>
+            <option value="Drink">Drink</option>
+          </select>
+        </div>
+        <div class="meta-field">
+          <label style="margin-bottom:6px;">Cook Time</label>
+          <select id="recipeTime">
+            <option value="15">Under 15 min</option>
+            <option value="30">15–30 min</option>
+            <option value="60">30+ min</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="eyebrow">Ingredients</div>
+      <ul class="ingredient-list" id="ingredientList"></ul>
+
+      <div class="divider"></div>
+
+      <div class="eyebrow">Method</div>
+      <ol class="step-list" id="stepList"></ol>
+
+      <div class="divider"></div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-outline btn-sm" onclick="discardRecipe()">Discard</button>
+        <button class="btn btn-gold btn-sm" onclick="saveRecipe()">Save Recipe</button>
+      </div>
+    </div>
+
+    <!-- Library entry -->
+    <div class="library-entry" onclick="switchPanel('library')">
+      <div class="library-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </div>
+      <div class="library-text">
+        <div class="library-title">Recipe Library</div>
+        <div class="library-sub" id="librarySub">Browse your saved recipes</div>
+      </div>
+      <div class="library-arrow"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+    </div>
+  </div>
+
+  <!-- ══ LIBRARY PANEL ══ -->
+  <div class="panel" id="panel-library">
+    <div class="library-header">
+      <button class="back-btn" onclick="switchPanel('recipes')">
+        <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
+      </button>
+      <div class="library-title-h">Library</div>
+      <div class="library-count" id="libraryCount">0 recipes</div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-eyebrow">Category</div>
+      <div class="chip-row" id="categoryChips">
+        <button class="chip active" data-cat="all" onclick="setCategoryFilter('all')">All</button>
+        <button class="chip" data-cat="Breakfast" onclick="setCategoryFilter('Breakfast')">Breakfast</button>
+        <button class="chip" data-cat="Lunch" onclick="setCategoryFilter('Lunch')">Lunch</button>
+        <button class="chip" data-cat="Dinner" onclick="setCategoryFilter('Dinner')">Dinner</button>
+        <button class="chip" data-cat="Snack" onclick="setCategoryFilter('Snack')">Snack</button>
+        <button class="chip" data-cat="Dessert" onclick="setCategoryFilter('Dessert')">Dessert</button>
+        <button class="chip" data-cat="Appetizer" onclick="setCategoryFilter('Appetizer')">Appetizer</button>
+        <button class="chip" data-cat="Side" onclick="setCategoryFilter('Side')">Side</button>
+        <button class="chip" data-cat="Drink" onclick="setCategoryFilter('Drink')">Drink</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-eyebrow">Cook Time</div>
+      <div class="chip-row" id="timeChips">
+        <button class="chip active" data-time="all" onclick="setTimeFilter('all')">Any time</button>
+        <button class="chip" data-time="15" onclick="setTimeFilter('15')">&lt; 15 min</button>
+        <button class="chip" data-time="30" onclick="setTimeFilter('30')">15–30 min</button>
+        <button class="chip" data-time="60" onclick="setTimeFilter('60')">30+ min</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-eyebrow">Ingredient Search</div>
+      <input type="text" class="ingredient-search" id="ingredientSearch" placeholder="Search any ingredient — works across languages" oninput="renderLibrary()">
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+      <button class="clear-filters" onclick="clearFilters()">Clear filters</button>
+    </div>
+
+    <div class="recipes-list" id="libraryList"></div>
+  </div>
+
+  <!-- ══ FOOD LOG PANEL ══ -->
+  <div class="panel" id="panel-log">
+
+    <!-- Date navigator -->
+    <div class="date-nav">
+      <button class="date-arrow" id="dateBack" onclick="navigateDay(-1)">
+        <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
+      </button>
+      <div class="date-display" id="dateDisplay">Today</div>
+      <button class="date-arrow" id="dateFwd" onclick="navigateDay(1)">
+        <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg>
+      </button>
+    </div>
+    <button class="today-jump" id="todayJump" onclick="jumpToToday()" style="display:none">↺ Back to today</button>
+
+    <!-- Calorie hero -->
+    <div class="cal-hero">
+      <div class="cal-number"><span id="totalCal">0</span><sup>kcal</sup></div>
+      <div class="cal-label" id="calLabel">consumed today</div>
+      <div class="progress-track">
+        <div class="progress-fill" id="calProgress" style="width:0%"></div>
+      </div>
+      <div class="progress-labels">
+        <span>0</span>
+        <span>goal <span id="goalDisplay">2000</span></span>
+      </div>
+    </div>
+
+    <!-- 7-day trend chart -->
+    <div class="trend-card">
+      <div class="trend-header">
+        <div class="trend-title">Last 7 Days</div>
+        <div class="trend-avg">Avg <strong id="weekAvg">0</strong> kcal/day</div>
+      </div>
+      <div class="trend-chart" id="trendChart"></div>
+      <div class="trend-labels" id="trendLabels"></div>
+    </div>
+    <button class="view-all-link" onclick="openHistory()">View full history →</button>
+
+    <!-- Macros -->
+    <div class="macro-row">
+      <div class="macro-pill">
+        <div class="macro-val"><span id="totalProtein">0</span><span>g</span></div>
+        <div class="macro-name">Protein</div>
+      </div>
+      <div class="macro-pill">
+        <div class="macro-val"><span id="totalCarbs">0</span><span>g</span></div>
+        <div class="macro-name">Carbs</div>
+      </div>
+      <div class="macro-pill">
+        <div class="macro-val"><span id="totalFat">0</span><span>g</span></div>
+        <div class="macro-name">Fat</div>
+      </div>
+    </div>
+
+    <!-- Log a meal card -->
+    <div class="card" style="margin-bottom:22px">
+      <label>Log a Meal</label>
+
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('mealPhotoInput').click()">
+        <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <p>Tap to <strong>upload a photo</strong> of your meal</p>
+        <p style="margin-top:5px;font-size:11px;color:var(--text-muted);">AI will estimate calories &amp; macros</p>
+        <input type="file" id="mealPhotoInput" accept="image/*" style="display:none" onchange="handleMealPhoto(event)">
+      </div>
+
+      <div class="loading-block" id="logLoading">
+        <div class="loading-dots"><span></span><span></span><span></span></div>
+        <p>Analysing your meal…</p>
+      </div>
+
+      <div class="analysis-result" id="analysisResult">
+        <img class="analysis-img" id="analysisImg" src="" alt="">
+        <div class="analysis-name" id="analysisName"></div>
+        <div class="analysis-conf" id="analysisConf"></div>
+
+        <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:14px;">
+          <div class="cal-big"><span id="analysisCal">0</span> <span>kcal</span></div>
+          <div style="flex:1">
+            <div class="macro-row" style="margin-bottom:0;">
+              <div class="macro-pill" style="padding:9px 6px;">
+                <div class="macro-val" style="font-size:15px;"><span id="analysisProtein">0</span><span>g</span></div>
+                <div class="macro-name">Protein</div>
+              </div>
+              <div class="macro-pill" style="padding:9px 6px;">
+                <div class="macro-val" style="font-size:15px;"><span id="analysisCarbs">0</span><span>g</span></div>
+                <div class="macro-name">Carbs</div>
+              </div>
+              <div class="macro-pill" style="padding:9px 6px;">
+                <div class="macro-val" style="font-size:15px;"><span id="analysisFat">0</span><span>g</span></div>
+                <div class="macro-name">Fat</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <label>Meal name</label>
+          <input type="text" id="mealNameInput" placeholder="e.g. Chicken Caesar Salad">
+        </div>
+
+        <p style="font-size:11px;color:var(--text-muted);font-style:italic;margin-bottom:14px;">* Estimates may vary ±20–30%. Adjust as needed.</p>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn btn-outline btn-sm" onclick="discardMeal()">Discard</button>
+          <button class="btn btn-gold btn-sm" onclick="logMeal()">Log Meal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selected day's meals -->
+    <div class="eyebrow" id="mealsHeading" style="margin-bottom:12px;">Today's Meals</div>
+    <div class="meals-list" id="mealsList">
+      <div class="empty-state">
+        <div class="empty-icon">🍽</div>
+        <p>No meals logged yet today</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-recipes" onclick="switchPanel('recipes')">
+      <svg viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+      <span class="nav-label">Recipes</span>
+    </button>
+    <button class="nav-btn" id="nav-log" onclick="switchPanel('log')">
+      <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span class="nav-label">Food Log</span>
+    </button>
+  </nav>
+
+  <!-- RECIPE DETAIL SHEET -->
+  <div class="sheet-overlay" id="recipeSheet" onclick="closeSheet(event)">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div id="sheetContent"></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── STATE ──
+    const state = {
+      recipes: JSON.parse(localStorage.getItem('bw_recipes') || '[]'),
+      meals:   JSON.parse(localStorage.getItem('bw_meals')   || '[]'),
+      goal:    parseInt(localStorage.getItem('bw_goal') || '2000'),
+      attachedPhotos: [],
+      filters: { category: 'all', time: 'all' },
+      selectedDate: new Date().toDateString()
+    };
+
+    // Backfill old recipes that don't have category/cookTime
+    state.recipes.forEach(r => {
+      if (!r.category) r.category = 'Dinner';
+      if (!r.cookTime) r.cookTime = 30;
+    });
+
+    // ══ AUTH (Firebase + Google sign-in) ══
+    // Paste your Firebase config below once you've created the project.
+    // Get it from: Firebase Console → Project settings → General → Your apps
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZ1bzQei3oF2l1p9fxHZmddmhCPrAqEfk",
+      authDomain: "bitewise-6bbf0.firebaseapp.com",
+      projectId: "bitewise-6bbf0",
+      storageBucket: "bitewise-6bbf0.firebasestorage.app",
+      messagingSenderId: "1056391535627",
+      appId: "1:1056391535627:web:75819b182aa908569ffb0e"
+    };
+
+    let auth = null;
+    let db = null;
+    let firebaseReady = false;
+    try {
+      if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "PASTE_YOUR_API_KEY_HERE") {
+        firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        db = firebase.firestore();
+        firebaseReady = true;
+      }
+    } catch (e) {
+      console.warn("Firebase init failed:", e);
+    }
+
+    // ══ CLOUDINARY (photo storage) ══
+    const CLOUDINARY_CLOUD_NAME = 'dg5lidt5z';
+    const CLOUDINARY_PRESET = 'bitewise_uploads';
+
+    async function uploadToCloudinary(dataUrl) {
+      // Pass through anything that's already a remote URL or empty
+      if (!dataUrl) return null;
+      if (!dataUrl.startsWith('data:')) return dataUrl;
+      if (!CLOUDINARY_CLOUD_NAME) return dataUrl;
+      try {
+        const formData = new FormData();
+        formData.append('file', dataUrl);
+        formData.append('upload_preset', CLOUDINARY_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        if (!res.ok) {
+          const t = await res.text();
+          console.warn('Cloudinary upload failed', res.status, t);
+          return dataUrl;
+        }
+        const data = await res.json();
+        return data.secure_url || dataUrl;
+      } catch (e) {
+        console.warn('Cloudinary upload error', e);
+        return dataUrl;
+      }
+    }
+
+    // ── CLOUD SYNC (Firestore for data, Cloudinary for photos) ──
+    function currentUid() { return firebaseReady && auth.currentUser ? auth.currentUser.uid : null; }
+
+    // Strip oversized data-URL photos before sending to Firestore.
+    // Cloudinary URLs (https://...) stay — they're tiny strings.
+    function stripLocal(obj) {
+      const out = { ...obj };
+      if (typeof out.photo === 'string' && out.photo.startsWith('data:')) delete out.photo;
+      if (typeof out.url   === 'string' && out.url.startsWith('data:'))   delete out.url;
+      return out;
+    }
+
+    async function cloudSaveRecipe(r) {
+      const uid = currentUid(); if (!uid) return;
+      try { await db.collection('users').doc(uid).collection('recipes').doc(String(r.id)).set(stripLocal(r)); }
+      catch (e) { console.warn('cloudSaveRecipe failed', e); }
+    }
+    async function cloudDeleteRecipe(id) {
+      const uid = currentUid(); if (!uid) return;
+      try { await db.collection('users').doc(uid).collection('recipes').doc(String(id)).delete(); }
+      catch (e) { console.warn('cloudDeleteRecipe failed', e); }
+    }
+    async function cloudSaveMeal(m) {
+      const uid = currentUid(); if (!uid) return;
+      try { await db.collection('users').doc(uid).collection('meals').doc(String(m.id)).set(stripLocal(m)); }
+      catch (e) { console.warn('cloudSaveMeal failed', e); }
+    }
+    async function cloudDeleteMeal(id) {
+      const uid = currentUid(); if (!uid) return;
+      try { await db.collection('users').doc(uid).collection('meals').doc(String(id)).delete(); }
+      catch (e) { console.warn('cloudDeleteMeal failed', e); }
+    }
+
+    // Load all cloud data on sign-in. Merge with any local photos by id.
+    async function cloudLoadAll() {
+      const uid = currentUid(); if (!uid) return;
+      try {
+        const [rSnap, mSnap] = await Promise.all([
+          db.collection('users').doc(uid).collection('recipes').get(),
+          db.collection('users').doc(uid).collection('meals').get()
+        ]);
+        // Build local photo lookup by id (preserve photos that this device has)
+        const localRecipePhotos = Object.fromEntries(state.recipes.filter(r => r.photo).map(r => [r.id, r.photo]));
+        const localMealPhotos   = Object.fromEntries(state.meals.filter(m => m.url).map(m => [m.id, m.url]));
+
+        state.recipes = rSnap.docs.map(d => {
+          const data = d.data();
+          // Prefer cloud photo URL (Cloudinary) — fallback to any local data URL on this device
+          return { ...data, id: data.id || Number(d.id), photo: data.photo || localRecipePhotos[data.id] || null };
+        }).sort((a, b) => b.id - a.id);
+
+        state.meals = mSnap.docs.map(d => {
+          const data = d.data();
+          return { ...data, id: data.id || Number(d.id), url: data.url || localMealPhotos[data.id] || null };
+        }).sort((a, b) => b.id - a.id);
+
+        // Backfill missing fields
+        state.recipes.forEach(r => {
+          if (!r.category) r.category = 'Dinner';
+          if (!r.cookTime) r.cookTime = 30;
+        });
+
+        localStorage.setItem('bw_recipes', JSON.stringify(state.recipes));
+        localStorage.setItem('bw_meals',   JSON.stringify(state.meals));
+        renderRecipes();
+        renderTodayMeals();
+      } catch (e) {
+        console.warn('cloudLoadAll failed', e);
+      }
+    }
+
+    // Push any local-only items to cloud after first sign-in (one-time merge)
+    async function cloudPushLocalIfNew() {
+      const uid = currentUid(); if (!uid) return;
+      try {
+        const writes = [];
+        state.recipes.forEach(r => writes.push(cloudSaveRecipe(r)));
+        state.meals.forEach(m => writes.push(cloudSaveMeal(m)));
+        await Promise.all(writes);
+      } catch (e) { console.warn('cloudPushLocalIfNew failed', e); }
+    }
+
+    function showLoginScreen()  { document.getElementById('loginScreen').style.display = 'flex'; }
+    function hideLoginScreen()  { document.getElementById('loginScreen').style.display = 'none'; }
+
+    function signInWithGoogle() {
+      if (!firebaseReady) {
+        showToast('Firebase not configured yet — using guest mode');
+        continueAsGuest();
+        return;
+      }
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(err => {
+        console.error('Sign-in failed', err);
+        showToast('Sign-in failed — try again');
+      });
+    }
+
+    function continueAsGuest() {
+      sessionStorage.setItem('bw_guest', '1');
+      hideLoginScreen();
+      renderUserChip(null);
+    }
+
+    function signOut() {
+      if (firebaseReady && auth.currentUser) {
+        auth.signOut();
+      }
+      sessionStorage.removeItem('bw_guest');
+      showLoginScreen();
+      closeSheet();
+    }
+
+    function renderUserChip(user) {
+      const right = document.getElementById('headerRight');
+      if (user) {
+        const initial = (user.displayName || user.email || '?').charAt(0).toUpperCase();
+        const avatar = user.photoURL
+          ? `<img src="${user.photoURL}" alt="">`
+          : initial;
+        const firstName = (user.displayName || user.email || 'You').split(' ')[0];
+        right.innerHTML = `
+          <div class="user-chip" onclick="openAccount()">
+            <div class="user-avatar">${avatar}</div>
+            <div class="user-name">${firstName}</div>
+          </div>`;
+      } else {
+        right.innerHTML = `
+          <div class="user-chip" onclick="openAccount()">
+            <div class="user-avatar">G</div>
+            <div class="user-name">Guest</div>
+          </div>`;
+      }
+    }
+
+    function openAccount() {
+      const user = firebaseReady ? auth.currentUser : null;
+      const isGuest = !user;
+      const initial = user ? (user.displayName || user.email || '?').charAt(0).toUpperCase() : 'G';
+      const avatar = user && user.photoURL
+        ? `<img src="${user.photoURL}" alt="">`
+        : initial;
+
+      document.getElementById('sheetContent').innerHTML = `
+        <div style="font-family:'Playfair Display',serif;font-size:24px;margin-bottom:18px;">Account</div>
+        <div class="signout-row" style="background:var(--surface2);border-radius:12px;border:1px solid var(--border);">
+          <div class="user-avatar">${avatar}</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;color:var(--text);font-weight:500;">${user ? (user.displayName || 'You') : 'Guest mode'}</div>
+            <div style="font-size:12px;color:var(--text-muted);font-weight:300;">${user ? user.email : 'Data stored on this device only'}</div>
+          </div>
+        </div>
+        <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">
+          ${isGuest
+            ? `<button class="btn btn-gold btn-sm" onclick="closeSheet(); showLoginScreen();" style="justify-content:center;">Sign in with Google</button>`
+            : `<button class="btn btn-outline btn-sm" onclick="signOut()" style="justify-content:center;">Sign out</button>`}
+        </div>
+
+        <div style="margin-top:28px;padding-top:22px;border-top:1px solid var(--border);">
+          <div class="eyebrow" style="margin-bottom:10px;">Gemini AI</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;color:var(--text);font-weight:400;">${hasGeminiKey() ? 'API key set' : 'No API key'}</div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:300;font-family:monospace;margin-top:2px;">${hasGeminiKey() ? '••••••••' + getGeminiKey().slice(-6) : 'AI features disabled'}</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="closeSheet(); promptForGeminiKey();">${hasGeminiKey() ? 'Update' : 'Add Key'}</button>
+          </div>
+          ${hasGeminiKey() ? `<button class="guest-link" onclick="if(confirm('Remove your Gemini API key?')){clearGeminiKey();closeSheet();showToast('API key removed');}" style="margin-top:14px;font-size:11px;color:#c97c5c;">Remove key</button>` : ''}
+        </div>
+
+        <div style="margin-top:18px;font-size:11px;color:var(--text-muted);font-weight:300;line-height:1.6;text-align:center;">
+          ${isGuest
+            ? 'Sign in to sync your recipes and food log across devices.'
+            : 'Your data is stored privately in your account.'}
+        </div>
+      `;
+      document.getElementById('recipeSheet').classList.add('open');
+    }
+
+    // Decide whether to show login or app on load
+    function bootAuth() {
+      if (firebaseReady) {
+        auth.onAuthStateChanged(async user => {
+          if (user) {
+            hideLoginScreen();
+            renderUserChip(user);
+            // First-time merge: push any local data up, then load merged result
+            const mergedKey = 'bw_merged_' + user.uid;
+            if (!localStorage.getItem(mergedKey)) {
+              await cloudPushLocalIfNew();
+              localStorage.setItem(mergedKey, '1');
+            }
+            await cloudLoadAll();
+          } else if (sessionStorage.getItem('bw_guest')) {
+            hideLoginScreen();
+            renderUserChip(null);
+          } else {
+            showLoginScreen();
+          }
+        });
+      } else {
+        // Firebase not configured yet — show login screen with guest fallback
+        if (sessionStorage.getItem('bw_guest')) {
+          hideLoginScreen();
+          renderUserChip(null);
+        } else {
+          showLoginScreen();
+        }
+      }
+    }
+    bootAuth();
+
+    // ══ GEMINI API ══
+    function getGeminiKey()  { return localStorage.getItem('bw_gemini_key') || ''; }
+    function setGeminiKey(k) { localStorage.setItem('bw_gemini_key', k.trim()); }
+    function clearGeminiKey(){ localStorage.removeItem('bw_gemini_key'); }
+    function hasGeminiKey()  { return !!getGeminiKey(); }
+
+    const GEMINI_MODEL = 'gemini-2.5-flash';
+    const GEMINI_URL = key =>
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+
+    async function callGemini(parts) {
+      const key = getGeminiKey();
+      if (!key) throw new Error('NO_KEY');
+      const res = await fetch(GEMINI_URL(key), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.7 }
+        })
+      });
+      if (!res.ok) {
+        let detail = '';
+        try {
+          const errJson = await res.json();
+          detail = errJson?.error?.message || JSON.stringify(errJson);
+        } catch {
+          detail = await res.text();
+        }
+        console.error('Gemini error', res.status, detail);
+        const e = new Error('API_ERROR');
+        e.status = res.status;
+        e.detail = detail;
+        throw e;
+      }
+      const data = await res.json();
+      // Surface non-text responses (e.g. safety blocks)
+      if (data?.promptFeedback?.blockReason) {
+        const e = new Error('API_ERROR');
+        e.detail = 'Blocked by safety filter: ' + data.promptFeedback.blockReason;
+        throw e;
+      }
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!text) {
+        console.error('Empty Gemini response', data);
+        const e = new Error('API_ERROR');
+        e.detail = 'Empty response from Gemini';
+        throw e;
+      }
+      try { return JSON.parse(text); }
+      catch (e) { console.error('Bad JSON from Gemini', text); throw new Error('PARSE_ERROR'); }
+    }
+
+    function dataUrlToInlineImage(dataUrl) {
+      const m = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (!m) throw new Error('BAD_IMAGE');
+      return { inlineData: { mimeType: m[1], data: m[2] } };
+    }
+
+    function promptForGeminiKey() {
+      document.getElementById('sheetContent').innerHTML = `
+        <div style="font-family:'Playfair Display',serif;font-size:24px;margin-bottom:6px;">Enable AI</div>
+        <div style="font-size:13px;color:var(--text-muted);font-weight:300;margin-bottom:18px;line-height:1.6;">
+          Bitewise uses Google's free Gemini API to generate recipes and analyse meal photos. Add your own free key (it stays only on your device, never shared).
+        </div>
+        <label style="margin-bottom:8px;">Gemini API Key</label>
+        <input type="text" id="apiKeyInput" placeholder="AIza..." value="${getGeminiKey()}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="font-family:monospace;font-size:12px;">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:300;margin-top:10px;line-height:1.6;">
+          Don't have one? Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--gold);text-decoration:none;">aistudio.google.com/apikey</a> — takes 30 seconds.
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+          <button class="btn btn-outline btn-sm" onclick="closeSheet()">Cancel</button>
+          <button class="btn btn-gold btn-sm" onclick="saveApiKey()">Save Key</button>
+        </div>
+      `;
+      document.getElementById('recipeSheet').classList.add('open');
+      setTimeout(() => document.getElementById('apiKeyInput')?.focus(), 100);
+    }
+
+    function saveApiKey() {
+      const k = document.getElementById('apiKeyInput').value.trim();
+      if (!k) { showToast('Please paste your API key'); return; }
+      if (!k.startsWith('AIza')) { showToast('That doesn’t look like a Gemini key'); return; }
+      setGeminiKey(k);
+      closeSheet();
+      showToast('AI enabled');
+    }
+
+    // ── IMAGE COMPRESSION ──
+    // Resize to max 1024px (longest edge), JPEG @ 0.82 quality.
+    // Typical phone photo: 3 MB → ~200 KB. Returns a data URL.
+    function compressImage(file, maxDim = 1024, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = new Image();
+          img.onload = () => {
+            let { width, height } = img;
+            if (width > maxDim || height > maxDim) {
+              if (width >= height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // ── INIT ──
+    document.getElementById('headerDate').textContent =
+      new Date().toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric' });
+    document.getElementById('goalDisplay').textContent = state.goal;
+    renderRecipes();
+    renderTodayMeals();
+
+    // ── NAV ──
+    function switchPanel(name) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      // Library lives under the Recipes tab — keep that nav button highlighted
+      const navName = (name === 'library') ? 'recipes' : name;
+      const navBtn = document.getElementById('nav-' + navName);
+      if (navBtn) navBtn.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    // ── TOAST ──
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    // ══ RECIPE BOOK ══
+
+    async function handlePhotoAttach(e) {
+      const files = Array.from(e.target.files);
+      const container = document.getElementById('attachedPhotos');
+      for (const file of files) {
+        try {
+          const dataUrl = await compressImage(file);
+          state.attachedPhotos.push({ url: dataUrl });
+          const img = document.createElement('img');
+          img.src = dataUrl;
+          img.className = 'photo-thumb';
+          container.appendChild(img);
+        } catch (err) {
+          console.error('Image compression failed', err);
+          showToast('Could not load that photo');
+        }
+      }
+      e.target.value = '';
+    }
+
+    async function generateRecipe() {
+      const desc = document.getElementById('describeInput').value.trim();
+      if (!desc) { showToast('Please describe your dish first'); return; }
+      if (!hasGeminiKey()) { promptForGeminiKey(); return; }
+
+      document.getElementById('recipeResult').classList.remove('visible');
+      document.getElementById('recipeLoading').classList.add('visible');
+      document.getElementById('generateBtn').disabled = true;
+
+      const prompt = `You are a thoughtful chef. The user describes how they made a dish. Generate a clean, structured recipe matching their description and respond with the SAME LANGUAGE as the user's description.
+
+Return strictly valid JSON in this shape:
+{
+  "name": "string — short dish name in user's language",
+  "category": "Breakfast" | "Lunch" | "Dinner" | "Snack" | "Dessert" | "Appetizer" | "Side" | "Drink",
+  "cookTime": 15 | 30 | 60,  // 15 = under 15 min, 30 = 15-30 min, 60 = 30+ min
+  "ingredients": [{ "qty": "string with amount + unit", "name": "ingredient name in user's language" }],
+  "steps": ["string", "string", ...],
+  "englishTags": ["lowercase english keywords for the main ingredients, always in english regardless of input language"]
+}
+
+Description from user:
+"""${desc}"""`;
+
+      try {
+        const parts = [{ text: prompt }];
+        // Include any attached photos as visual context
+        for (const p of state.attachedPhotos) {
+          try { parts.push(dataUrlToInlineImage(p.url)); } catch {}
+        }
+        const recipe = await callGemini(parts);
+
+        document.getElementById('recipeName').value = recipe.name || '';
+        document.getElementById('recipeCategory').value = recipe.category || 'Dinner';
+        document.getElementById('recipeTime').value = String(recipe.cookTime || 30);
+        state.pendingEnglishTags = recipe.englishTags || [];
+
+        document.getElementById('ingredientList').innerHTML = (recipe.ingredients || []).map(i =>
+          `<li class="ingredient-item">
+            <span class="ingredient-qty">${i.qty || ''}</span>
+            <span>${i.name || ''}</span>
+          </li>`
+        ).join('');
+
+        document.getElementById('stepList').innerHTML = (recipe.steps || []).map((s, i) =>
+          `<li class="step-item">
+            <span class="step-num">${i + 1}</span>
+            <span>${s}</span>
+          </li>`
+        ).join('');
+
+        document.getElementById('recipeResult').classList.add('visible');
+      } catch (err) {
+        if (err.message === 'NO_KEY') promptForGeminiKey();
+        else if (err.message === 'API_ERROR') showToast(err.detail ? err.detail.slice(0, 80) : 'AI request failed');
+        else showToast('Could not generate recipe — try again');
+      } finally {
+        document.getElementById('recipeLoading').classList.remove('visible');
+        document.getElementById('generateBtn').disabled = false;
+      }
+    }
+
+    function getMockRecipe(desc) {
+      const d = desc.toLowerCase();
+      if (d.includes('pasta') || d.includes('noodle') || d.includes('spaghetti') || d.includes('面')) {
+        return {
+          name: 'Creamy Garlic Chicken Pasta',
+          category: 'Dinner',
+          cookTime: 30,
+          englishTags: ['pasta','chicken','garlic','cream','parmesan','tomato','basil','olive oil'],
+          ingredients: [
+            { qty: '300 g',    name: 'pasta (penne or rigatoni)' },
+            { qty: '200 g',    name: 'cooked chicken, shredded' },
+            { qty: '4 cloves', name: 'garlic, finely minced' },
+            { qty: '200 ml',   name: 'heavy cream' },
+            { qty: '80 g',     name: 'parmesan, freshly grated' },
+            { qty: '100 g',    name: 'cherry tomatoes, halved' },
+            { qty: 'handful',  name: 'fresh basil leaves' },
+            { qty: '2 tbsp',   name: 'olive oil' },
+            { qty: 'to taste', name: 'salt & black pepper' }
+          ],
+          steps: [
+            'Bring a large pot of well-salted water to a rolling boil. Cook pasta until al dente, reserving ½ cup of pasta water before draining.',
+            'Warm olive oil in a wide pan over medium heat. Add garlic and sauté for 90 seconds until fragrant — do not let it colour.',
+            'Add cherry tomatoes and cook 3–4 minutes, pressing lightly until they begin to blister and soften.',
+            'Pour in the cream and bring to a gentle simmer. Stir in half the parmesan until melted and smooth.',
+            'Add shredded chicken and the drained pasta. Toss well, adding pasta water a splash at a time until the sauce coats every piece.',
+            'Off the heat, fold in the remaining parmesan and torn basil. Season generously and serve immediately in warmed bowls.'
+          ]
+        };
+      }
+      if (d.includes('salad') || d.includes('greens') || d.includes('沙拉')) {
+        return {
+          name: 'Garden Salad with Lemon Vinaigrette',
+          category: 'Lunch',
+          cookTime: 15,
+          englishTags: ['salad','lettuce','cucumber','tomato','onion','feta','olive oil','lemon'],
+          ingredients: [
+            { qty: '120 g',  name: 'mixed salad leaves' },
+            { qty: '1',      name: 'cucumber, ribbon-sliced' },
+            { qty: '150 g',  name: 'cherry tomatoes, halved' },
+            { qty: '½',      name: 'red onion, paper-thin' },
+            { qty: '30 g',   name: 'feta, crumbled' },
+            { qty: '2 tbsp', name: 'extra-virgin olive oil' },
+            { qty: '1 tbsp', name: 'fresh lemon juice' },
+            { qty: 'pinch',  name: 'flaky sea salt' }
+          ],
+          steps: [
+            'Wash and thoroughly dry all greens — excess water dilutes the dressing.',
+            'Arrange leaves in a wide, shallow bowl. Layer cucumber, tomatoes, and onion on top.',
+            'Whisk olive oil, lemon juice, and a pinch of salt until emulsified.',
+            'Drizzle dressing just before serving and toss gently to coat without bruising the leaves.',
+            'Scatter feta over the top and finish with a crack of black pepper.'
+          ]
+        };
+      }
+      if (d.includes('egg') || d.includes('scramble') || d.includes('omelette') || d.includes('蛋')) {
+        return {
+          name: 'Soft Scrambled Eggs',
+          category: 'Breakfast',
+          cookTime: 15,
+          englishTags: ['egg','butter','cream','salt','chive','toast'],
+          ingredients: [
+            { qty: '3',      name: 'large eggs, room temperature' },
+            { qty: '1 tbsp', name: 'unsalted butter' },
+            { qty: '2 tbsp', name: 'crème fraîche or heavy cream' },
+            { qty: 'pinch',  name: 'flaky sea salt' },
+            { qty: 'to top', name: 'fresh chives, finely chopped' }
+          ],
+          steps: [
+            'Crack eggs into a cold non-stick pan. Add butter — do not whisk beforehand.',
+            'Place over the lowest heat possible. Stir constantly with a rubber spatula, pulling the eggs from the edges.',
+            'As soft curds begin to form, remove from heat every 20 seconds and keep stirring — carry-over heat does the work.',
+            'When barely set and glossy, fold in crème fraîche and remove from heat immediately.',
+            'Season with salt, scatter chives on top, and serve at once on warm toast.'
+          ]
+        };
+      }
+      return {
+        name: 'House Special',
+        category: 'Dinner',
+        cookTime: 30,
+        englishTags: ['olive oil','garlic','herbs','salt','pepper'],
+        ingredients: [
+          { qty: 'as needed', name: 'your main ingredients' },
+          { qty: '2 tbsp',   name: 'olive oil or butter' },
+          { qty: '2 cloves', name: 'garlic' },
+          { qty: 'handful',  name: 'fresh herbs of choice' },
+          { qty: 'to taste', name: 'salt & black pepper' }
+        ],
+        steps: [
+          'Prepare all ingredients — wash, peel, and measure before you begin.',
+          'Heat fat in your pan over medium heat until shimmering.',
+          'Add aromatics first and cook until fragrant, then add your main ingredients.',
+          'Cook, adjusting heat as needed, until everything is done to your liking.',
+          'Season, finish with fresh herbs, and serve while hot.'
+        ]
+      };
+    }
+
+    function discardRecipe() {
+      document.getElementById('recipeResult').classList.remove('visible');
+      document.getElementById('describeInput').value = '';
+      document.getElementById('attachedPhotos').innerHTML = '';
+      state.attachedPhotos = [];
+      state.pendingEnglishTags = [];
+    }
+
+    async function saveRecipe() {
+      const name = document.getElementById('recipeName').value.trim() || 'Untitled Recipe';
+      const ingredients = Array.from(document.querySelectorAll('#ingredientList .ingredient-item')).map(li => ({
+        qty:  li.querySelector('.ingredient-qty').textContent,
+        name: li.querySelector('span:last-child').textContent
+      }));
+      const steps = Array.from(document.querySelectorAll('#stepList .step-item span:last-child')).map(s => s.textContent);
+
+      const localPhoto = state.attachedPhotos[0]?.url || null;
+      let photoUrl = localPhoto;
+      if (localPhoto && localPhoto.startsWith('data:')) {
+        showToast('Uploading photo…');
+        photoUrl = await uploadToCloudinary(localPhoto);
+      }
+
+      const recipe = {
+        id: Date.now(),
+        name,
+        category: document.getElementById('recipeCategory').value,
+        cookTime: parseInt(document.getElementById('recipeTime').value),
+        ingredients,
+        steps,
+        englishTags: state.pendingEnglishTags || [],
+        photo: photoUrl,
+        date:  new Date().toISOString()
+      };
+
+      state.recipes.unshift(recipe);
+      localStorage.setItem('bw_recipes', JSON.stringify(state.recipes));
+      cloudSaveRecipe(recipe);
+      discardRecipe();
+      renderRecipes();
+      showToast('Recipe saved');
+    }
+
+    function renderRecipes() {
+      // Update library entry count on the main recipes page
+      const sub = document.getElementById('librarySub');
+      const n = state.recipes.length;
+      if (n === 0) sub.textContent = 'Browse your saved recipes';
+      else sub.textContent = `${n} ${n === 1 ? 'recipe' : 'recipes'} · tap to browse`;
+      renderLibrary();
+    }
+
+    // ── Library filters ──
+    function setCategoryFilter(cat) {
+      state.filters.category = cat;
+      document.querySelectorAll('#categoryChips .chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.cat === cat);
+      });
+      renderLibrary();
+    }
+    function setTimeFilter(t) {
+      state.filters.time = t;
+      document.querySelectorAll('#timeChips .chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.time === t);
+      });
+      renderLibrary();
+    }
+    function clearFilters() {
+      state.filters = { category: 'all', time: 'all' };
+      document.getElementById('ingredientSearch').value = '';
+      document.querySelectorAll('#categoryChips .chip').forEach(c => c.classList.toggle('active', c.dataset.cat === 'all'));
+      document.querySelectorAll('#timeChips .chip').forEach(c => c.classList.toggle('active', c.dataset.time === 'all'));
+      renderLibrary();
+    }
+
+    function recipeMatchesTime(r) {
+      const t = state.filters.time;
+      if (t === 'all') return true;
+      if (t === '15') return r.cookTime <= 15;
+      if (t === '30') return r.cookTime > 15 && r.cookTime <= 30;
+      if (t === '60') return r.cookTime > 30;
+      return true;
+    }
+
+    function renderLibrary() {
+      const list = document.getElementById('libraryList');
+      const countEl = document.getElementById('libraryCount');
+      const searchTerm = (document.getElementById('ingredientSearch')?.value || '').toLowerCase().trim();
+
+      const filtered = state.recipes.filter(r => {
+        if (state.filters.category !== 'all' && r.category !== state.filters.category) return false;
+        if (!recipeMatchesTime(r)) return false;
+        if (searchTerm) {
+          const inIngredients = r.ingredients.some(i => i.name.toLowerCase().includes(searchTerm));
+          const inEnglishTags = (r.englishTags || []).some(t => t.toLowerCase().includes(searchTerm));
+          const inName = r.name.toLowerCase().includes(searchTerm);
+          if (!inIngredients && !inEnglishTags && !inName) return false;
+        }
+        return true;
+      });
+
+      countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'recipe' : 'recipes'}`;
+
+      if (filtered.length === 0) {
+        const empty = state.recipes.length === 0
+          ? 'No recipes yet — generate your first one!'
+          : 'No recipes match your filters';
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">📖</div><p>${empty}</p></div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(r => {
+        const timeLabel = r.cookTime <= 15 ? '< 15 min' : r.cookTime <= 30 ? '15–30 min' : '30+ min';
+        return `
+          <div class="recipe-card" onclick="openRecipe(${r.id})">
+            <div class="recipe-card-thumb">
+              ${r.photo ? `<img src="${r.photo}" alt="">` : '🍳'}
+            </div>
+            <div class="recipe-card-body">
+              <div class="recipe-card-name">${r.name}</div>
+              <div class="recipe-card-meta">${r.ingredients.length} ingredients · ${new Date(r.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+              <div class="recipe-card-tags">
+                <span class="meta-tag">${r.category}</span>
+                <span class="meta-tag">${timeLabel}</span>
+              </div>
+            </div>
+            <div class="recipe-card-arrow"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openRecipe(id) {
+      const r = state.recipes.find(x => x.id === id);
+      if (!r) return;
+      const timeLabel = r.cookTime <= 15 ? '< 15 min' : r.cookTime <= 30 ? '15–30 min' : '30+ min';
+      const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      document.getElementById('sheetContent').innerHTML = `
+        ${r.photo ? `<img src="${r.photo}" style="width:100%;height:190px;object-fit:cover;border-radius:12px;margin-bottom:18px;">` : ''}
+        <div style="font-family:'Playfair Display',serif;font-size:23px;margin-bottom:6px;">${esc(r.name)}</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;">
+          <span class="meta-tag">${esc(r.category)}</span>
+          <span class="meta-tag">${timeLabel}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:22px;">${r.ingredients.length} ingredients · saved ${new Date(r.date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
+        <div class="eyebrow">Ingredients</div>
+        <ul class="ingredient-list" style="margin-bottom:20px;">
+          ${r.ingredients.map(i=>`<li class="ingredient-item"><span class="ingredient-qty">${esc(i.qty)}</span><span>${esc(i.name)}</span></li>`).join('')}
+        </ul>
+        <div class="eyebrow">Method</div>
+        <ol class="step-list" style="margin-bottom:26px;">
+          ${r.steps.map((s,i)=>`<li class="step-item"><span class="step-num">${i+1}</span><span>${esc(s)}</span></li>`).join('')}
+        </ol>
+        <div style="display:flex;gap:10px;justify-content:space-between;align-items:center;">
+          <button class="btn btn-outline btn-sm" onclick="deleteRecipe(${r.id})">Delete</button>
+          <button class="btn btn-gold btn-sm" onclick="editRecipe(${r.id})">
+            <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+            Edit
+          </button>
+        </div>
+      `;
+      document.getElementById('recipeSheet').classList.add('open');
+    }
+
+    // ── EDIT MODE ──
+    let editingRecipeId = null;
+    let editPhotoUrl = null;
+
+    function editRecipe(id) {
+      const r = state.recipes.find(x => x.id === id);
+      if (!r) return;
+      editingRecipeId = id;
+      editPhotoUrl = r.photo || null;
+      renderEditForm(r);
+    }
+
+    function renderEditForm(r) {
+      const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const cats = ['Breakfast','Lunch','Dinner','Snack','Dessert','Appetizer','Side','Drink'];
+      const catOptions = cats.map(c => `<option value="${c}" ${c === r.category ? 'selected' : ''}>${c}</option>`).join('');
+      const timeOptions = [
+        ['15','Under 15 min'],['30','15–30 min'],['60','30+ min']
+      ].map(([v,l]) => `<option value="${v}" ${String(r.cookTime) === v ? 'selected' : ''}>${l}</option>`).join('');
+
+      const ingRows = r.ingredients.map((i, idx) => `
+        <div class="edit-ing-row" data-idx="${idx}">
+          <input class="qty" type="text" value="${esc(i.qty)}" placeholder="qty">
+          <input class="name" type="text" value="${esc(i.name)}" placeholder="ingredient">
+          <button class="row-delete" onclick="removeEditIngredient(${idx})">✕</button>
+        </div>
+      `).join('');
+
+      const stepRows = r.steps.map((s, idx) => `
+        <div class="edit-step-row" data-idx="${idx}">
+          <span class="edit-step-num">${idx + 1}</span>
+          <textarea placeholder="Step description">${esc(s)}</textarea>
+          <button class="row-delete" onclick="removeEditStep(${idx})">✕</button>
+        </div>
+      `).join('');
+
+      const photoBlock = editPhotoUrl
+        ? `<img src="${editPhotoUrl}" class="edit-photo-thumb">`
+        : `<div class="edit-photo-empty">📷</div>`;
+
+      document.getElementById('sheetContent').innerHTML = `
+        <div style="font-family:'Playfair Display',serif;font-size:22px;margin-bottom:18px;">Edit Recipe</div>
+
+        <label>Photo</label>
+        <div class="edit-photo-area">
+          ${photoBlock}
+          <div class="edit-photo-actions">
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('editPhotoInput').click()" style="justify-content:center;">${editPhotoUrl ? 'Replace photo' : 'Add photo'}</button>
+            ${editPhotoUrl ? `<button class="btn btn-outline btn-sm" onclick="removeEditPhoto()" style="justify-content:center;">Remove</button>` : ''}
+            <input type="file" id="editPhotoInput" accept="image/*" style="display:none" onchange="handleEditPhoto(event)">
+          </div>
+        </div>
+
+        <label>Recipe name</label>
+        <input type="text" id="editRecipeName" value="${esc(r.name)}" style="margin-bottom:14px;">
+
+        <div class="meta-row">
+          <div class="meta-field">
+            <label style="margin-bottom:6px;">Category</label>
+            <select id="editRecipeCategory">${catOptions}</select>
+          </div>
+          <div class="meta-field">
+            <label style="margin-bottom:6px;">Cook Time</label>
+            <select id="editRecipeTime">${timeOptions}</select>
+          </div>
+        </div>
+
+        <div class="eyebrow">Ingredients</div>
+        <div class="edit-list" id="editIngredients">${ingRows}</div>
+        <button class="add-row-btn" onclick="addEditIngredient()">+ Add ingredient</button>
+
+        <div class="eyebrow">Method</div>
+        <div class="edit-list" id="editSteps">${stepRows}</div>
+        <button class="add-row-btn" onclick="addEditStep()">+ Add step</button>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button class="btn btn-outline btn-sm" onclick="cancelEdit()">Cancel</button>
+          <button class="btn btn-gold btn-sm" onclick="saveEdit()">Save Changes</button>
+        </div>
+      `;
+    }
+
+    function readEditDraft() {
+      const r = state.recipes.find(x => x.id === editingRecipeId);
+      if (!r) return null;
+      return {
+        ...r,
+        name: document.getElementById('editRecipeName').value.trim() || r.name,
+        category: document.getElementById('editRecipeCategory').value,
+        cookTime: parseInt(document.getElementById('editRecipeTime').value),
+        ingredients: Array.from(document.querySelectorAll('#editIngredients .edit-ing-row')).map(row => ({
+          qty:  row.querySelector('input.qty').value.trim(),
+          name: row.querySelector('input.name').value.trim()
+        })).filter(i => i.name),
+        steps: Array.from(document.querySelectorAll('#editSteps .edit-step-row textarea'))
+          .map(t => t.value.trim()).filter(Boolean),
+        photo: editPhotoUrl
+      };
+    }
+
+    function refreshEditForm() {
+      const draft = readEditDraft();
+      if (draft) renderEditForm(draft);
+    }
+
+    function addEditIngredient() {
+      const draft = readEditDraft();
+      draft.ingredients.push({ qty: '', name: '' });
+      renderEditForm(draft);
+    }
+    function removeEditIngredient(idx) {
+      const draft = readEditDraft();
+      draft.ingredients.splice(idx, 1);
+      renderEditForm(draft);
+    }
+    function addEditStep() {
+      const draft = readEditDraft();
+      draft.steps.push('');
+      renderEditForm(draft);
+    }
+    function removeEditStep(idx) {
+      const draft = readEditDraft();
+      draft.steps.splice(idx, 1);
+      renderEditForm(draft);
+    }
+
+    async function handleEditPhoto(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        editPhotoUrl = await compressImage(file);
+        refreshEditForm();
+      } catch (err) {
+        showToast('Could not load that photo');
+      }
+      e.target.value = '';
+    }
+
+    function removeEditPhoto() {
+      editPhotoUrl = null;
+      refreshEditForm();
+    }
+
+    function cancelEdit() {
+      const id = editingRecipeId;
+      editingRecipeId = null;
+      editPhotoUrl = null;
+      if (id) openRecipe(id);
+      else closeSheet();
+    }
+
+    async function saveEdit() {
+      const draft = readEditDraft();
+      if (!draft) return;
+      const idx = state.recipes.findIndex(x => x.id === editingRecipeId);
+      if (idx === -1) return;
+
+      if (draft.photo && draft.photo.startsWith('data:')) {
+        showToast('Uploading photo…');
+        draft.photo = await uploadToCloudinary(draft.photo);
+      }
+
+      state.recipes[idx] = draft;
+      localStorage.setItem('bw_recipes', JSON.stringify(state.recipes));
+      cloudSaveRecipe(draft);
+      const id = editingRecipeId;
+      editingRecipeId = null;
+      editPhotoUrl = null;
+      renderRecipes();
+      openRecipe(id);
+      showToast('Recipe updated');
+    }
+
+    function deleteRecipe(id) {
+      state.recipes = state.recipes.filter(r => r.id !== id);
+      localStorage.setItem('bw_recipes', JSON.stringify(state.recipes));
+      cloudDeleteRecipe(id);
+      closeSheet();
+      renderRecipes();
+      showToast('Recipe deleted');
+    }
+
+    function closeSheet(e) {
+      if (!e || e.target === document.getElementById('recipeSheet')) {
+        document.getElementById('recipeSheet').classList.remove('open');
+      }
+    }
+
+    // ══ FOOD LOG ══
+    let pendingMeal = null;
+
+    async function handleMealPhoto(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!hasGeminiKey()) { promptForGeminiKey(); e.target.value = ''; return; }
+
+      document.getElementById('uploadArea').style.display = 'none';
+      document.getElementById('logLoading').classList.add('visible');
+      document.getElementById('analysisResult').classList.remove('visible');
+
+      let dataUrl;
+      try {
+        dataUrl = await compressImage(file);
+      } catch (err) {
+        showToast('Could not load that photo');
+        discardMeal();
+        return;
+      }
+
+      const prompt = `You are a nutrition analyst. Analyse this meal photo and estimate its nutritional content.
+
+Return strictly valid JSON in this shape:
+{
+  "name": "short descriptive name of the meal",
+  "calories": integer,
+  "protein": integer (grams),
+  "carbs": integer (grams),
+  "fat": integer (grams),
+  "confidence": integer (0-100, how confident you are in the estimate)
+}
+
+Be realistic: portion estimates carry ±20-30% uncertainty for mixed dishes. Return only the JSON, no commentary.`;
+
+      try {
+        const result = await callGemini([
+          { text: prompt },
+          dataUrlToInlineImage(dataUrl)
+        ]);
+
+        pendingMeal = {
+          name: result.name || 'Meal',
+          calories: parseInt(result.calories) || 0,
+          protein:  parseInt(result.protein)  || 0,
+          carbs:    parseInt(result.carbs)    || 0,
+          fat:      parseInt(result.fat)      || 0,
+          confidence: parseInt(result.confidence) || 80,
+          url: dataUrl
+        };
+
+        document.getElementById('analysisImg').src = dataUrl;
+        document.getElementById('analysisName').textContent = pendingMeal.name;
+        document.getElementById('analysisConf').textContent = `AI estimate · ${pendingMeal.confidence}% confidence`;
+        document.getElementById('analysisCal').textContent = pendingMeal.calories;
+        document.getElementById('analysisProtein').textContent = pendingMeal.protein;
+        document.getElementById('analysisCarbs').textContent = pendingMeal.carbs;
+        document.getElementById('analysisFat').textContent = pendingMeal.fat;
+        document.getElementById('mealNameInput').value = pendingMeal.name;
+
+        document.getElementById('analysisResult').classList.add('visible');
+      } catch (err) {
+        if (err.message === 'NO_KEY') promptForGeminiKey();
+        else if (err.message === 'API_ERROR') showToast(err.detail ? err.detail.slice(0, 80) : 'AI request failed');
+        else showToast('Could not analyse photo — try again');
+        discardMeal();
+      } finally {
+        document.getElementById('logLoading').classList.remove('visible');
+      }
+    }
+
+    function getMockAnalysis() {
+      const options = [
+        { name: 'Avocado Toast',          calories: 320, protein:  8, carbs: 36, fat: 18, confidence: 87 },
+        { name: 'Grilled Chicken Bowl',   calories: 510, protein: 42, carbs: 38, fat: 14, confidence: 91 },
+        { name: 'Caesar Salad',           calories: 290, protein: 11, carbs: 16, fat: 21, confidence: 84 },
+        { name: 'Pasta Carbonara',        calories: 680, protein: 26, carbs: 74, fat: 28, confidence: 89 },
+        { name: 'Salmon & Vegetables',    calories: 420, protein: 38, carbs: 22, fat: 18, confidence: 93 },
+        { name: 'Acai Bowl',              calories: 380, protein:  7, carbs: 68, fat: 11, confidence: 85 },
+        { name: 'Beef Stir Fry',          calories: 540, protein: 34, carbs: 44, fat: 20, confidence: 88 },
+      ];
+      return options[Math.floor(Math.random() * options.length)];
+    }
+
+    function discardMeal() {
+      pendingMeal = null;
+      document.getElementById('analysisResult').classList.remove('visible');
+      document.getElementById('logLoading').classList.remove('visible');
+      document.getElementById('uploadArea').style.display = 'block';
+      document.getElementById('mealPhotoInput').value = '';
+    }
+
+    async function logMeal() {
+      if (!pendingMeal) return;
+      const name = document.getElementById('mealNameInput').value.trim() || pendingMeal.name;
+
+      let photoUrl = pendingMeal.url;
+      if (photoUrl && photoUrl.startsWith('data:')) {
+        showToast('Uploading photo…');
+        photoUrl = await uploadToCloudinary(photoUrl);
+      }
+
+      const meal = {
+        id:       Date.now(),
+        name,
+        calories: pendingMeal.calories,
+        protein:  pendingMeal.protein,
+        carbs:    pendingMeal.carbs,
+        fat:      pendingMeal.fat,
+        url:      photoUrl,
+        time:     new Date().toISOString(),
+        date:     new Date().toDateString()
+      };
+      state.meals.unshift(meal);
+      localStorage.setItem('bw_meals', JSON.stringify(state.meals));
+      cloudSaveMeal(meal);
+      state.selectedDate = new Date().toDateString();
+      discardMeal();
+      renderTodayMeals();
+      showToast('Meal logged');
+    }
+
+    // ── Date navigation ──
+    function navigateDay(delta) {
+      const d = new Date(state.selectedDate);
+      d.setDate(d.getDate() + delta);
+      const today = new Date(); today.setHours(0,0,0,0);
+      // Don't allow navigating to future days
+      if (d > today) return;
+      state.selectedDate = d.toDateString();
+      renderTodayMeals();
+    }
+    function jumpToToday() {
+      state.selectedDate = new Date().toDateString();
+      renderTodayMeals();
+    }
+    function selectDay(dateStr) {
+      state.selectedDate = dateStr;
+      renderTodayMeals();
+    }
+
+    function openHistory() {
+      // Group all logged meals by date, newest first
+      const byDate = {};
+      state.meals.forEach(m => {
+        if (!byDate[m.date]) byDate[m.date] = { cal: 0, count: 0 };
+        byDate[m.date].cal += m.calories;
+        byDate[m.date].count += 1;
+      });
+      const days = Object.entries(byDate)
+        .map(([dateStr, v]) => ({ dateStr, cal: v.cal, count: v.count }))
+        .sort((a, b) => new Date(b.dateStr) - new Date(a.dateStr));
+
+      const total = days.length;
+      const overall = total > 0 ? Math.round(days.reduce((s, d) => s + d.cal, 0) / total) : 0;
+
+      const body = total === 0
+        ? `<div class="history-empty">No meals logged yet — start tracking to build your history!</div>`
+        : days.map(d => {
+            const overCls = d.cal > state.goal ? ' over' : '';
+            const sub = `${d.count} meal${d.count === 1 ? '' : 's'}${d.cal > state.goal ? ' · over goal' : ''}`;
+            return `<div class="history-day" onclick="selectDay('${d.dateStr}'); closeSheet();">
+              <div class="history-date">
+                <div class="history-date-main">${formatDateLabel(d.dateStr)}</div>
+                <div class="history-date-sub">${new Date(d.dateStr).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})} · ${sub}</div>
+              </div>
+              <div class="history-cal${overCls}">${d.cal}<span>kcal</span></div>
+            </div>`;
+          }).join('');
+
+      document.getElementById('sheetContent').innerHTML = `
+        <div style="font-family:'Playfair Display',serif;font-size:24px;margin-bottom:4px;">Your History</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:18px;">
+          ${total} day${total === 1 ? '' : 's'} logged${total > 0 ? ` · avg <strong style="color:var(--gold);font-weight:500;">${overall}</strong> kcal/day` : ''}
+        </div>
+        ${body}
+      `;
+      document.getElementById('recipeSheet').classList.add('open');
+    }
+
+    function isToday(dateStr) { return dateStr === new Date().toDateString(); }
+    function isYesterday(dateStr) {
+      const y = new Date(); y.setDate(y.getDate() - 1);
+      return dateStr === y.toDateString();
+    }
+    function formatDateLabel(dateStr) {
+      if (isToday(dateStr)) return 'Today';
+      if (isYesterday(dateStr)) return 'Yesterday';
+      return new Date(dateStr).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    }
+
+    function renderTrendChart() {
+      const chart = document.getElementById('trendChart');
+      const labels = document.getElementById('trendLabels');
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const dateStr = d.toDateString();
+        const meals = state.meals.filter(m => m.date === dateStr);
+        const cal = meals.reduce((s, m) => s + m.calories, 0);
+        days.push({ dateStr, cal, dow: d.toLocaleDateString('en-US', { weekday:'narrow' }) });
+      }
+      const max = Math.max(state.goal, ...days.map(d => d.cal));
+      const avg = Math.round(days.reduce((s, d) => s + d.cal, 0) / 7);
+      document.getElementById('weekAvg').textContent = avg;
+
+      chart.innerHTML = days.map(d => {
+        const pct = max > 0 ? (d.cal / max) * 100 : 0;
+        const cls = [
+          'trend-bar',
+          d.dateStr === state.selectedDate ? 'selected' : '',
+          d.cal > state.goal ? 'over' : ''
+        ].filter(Boolean).join(' ');
+        return `<div class="${cls}" onclick="selectDay('${d.dateStr}')">
+          <span class="trend-bar-val">${d.cal}</span>
+          <div class="trend-bar-fill" style="height:${pct}%"></div>
+        </div>`;
+      }).join('');
+
+      labels.innerHTML = days.map(d => {
+        const cls = d.dateStr === state.selectedDate ? 'trend-label selected' : 'trend-label';
+        return `<div class="${cls}">${d.dow}</div>`;
+      }).join('');
+    }
+
+    function renderTodayMeals() {
+      const sel = state.selectedDate;
+      const dayMeals = state.meals.filter(m => m.date === sel);
+
+      // Date display + nav state
+      document.getElementById('dateDisplay').textContent = formatDateLabel(sel);
+      document.getElementById('dateFwd').disabled = isToday(sel);
+      document.getElementById('todayJump').style.display = isToday(sel) ? 'none' : 'block';
+      document.getElementById('mealsHeading').textContent =
+        isToday(sel) ? "Today's Meals" : `Meals — ${formatDateLabel(sel)}`;
+      document.getElementById('calLabel').textContent =
+        isToday(sel) ? 'consumed today' : 'consumed that day';
+
+      const totCal     = dayMeals.reduce((s, m) => s + m.calories, 0);
+      const totProtein = dayMeals.reduce((s, m) => s + m.protein,  0);
+      const totCarbs   = dayMeals.reduce((s, m) => s + m.carbs,    0);
+      const totFat     = dayMeals.reduce((s, m) => s + m.fat,      0);
+
+      document.getElementById('totalCal').textContent     = totCal;
+      document.getElementById('totalProtein').textContent = totProtein;
+      document.getElementById('totalCarbs').textContent   = totCarbs;
+      document.getElementById('totalFat').textContent     = totFat;
+      document.getElementById('calProgress').style.width  =
+        Math.min((totCal / state.goal) * 100, 100) + '%';
+
+      renderTrendChart();
+
+      const list = document.getElementById('mealsList');
+      if (dayMeals.length === 0) {
+        const msg = isToday(sel) ? 'No meals logged yet today' : 'No meals logged on this day';
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">🍽</div><p>${msg}</p></div>`;
+        return;
+      }
+      list.innerHTML = dayMeals.map(m => {
+        const time = new Date(m.time).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+        return `
+          <div class="meal-entry">
+            <div class="meal-thumb">
+              ${m.url ? `<img src="${m.url}" alt="">` : '🍽'}
+            </div>
+            <div class="meal-body">
+              <div class="meal-name">${m.name}</div>
+              <div class="meal-meta">${time} · P ${m.protein}g · C ${m.carbs}g · F ${m.fat}g</div>
+            </div>
+            <div class="meal-cal">${m.calories}<span>kcal</span></div>
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

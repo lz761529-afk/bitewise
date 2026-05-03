@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Local secrets (none currently — Gemini key lives in users' localStorage)
+.env
+.env.local
