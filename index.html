@@ -1262,7 +1262,7 @@
       </div>
       <div class="progress-labels">
         <span>0</span>
-        <span>goal <span id="goalDisplay">2000</span></span>
+        <span style="cursor:pointer;" onclick="editGoal()" title="Tap to edit">goal <span id="goalDisplay" style="color:var(--gold);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;">2000</span></span>
       </div>
     </div>
 
@@ -2551,7 +2551,11 @@ Be realistic: portion estimates carry ±20-30% uncertainty for mixed dishes. Ret
         days.push({ dateStr, cal, dow: d.toLocaleDateString('en-US', { weekday:'narrow' }) });
       }
       const max = Math.max(state.goal, ...days.map(d => d.cal));
-      const avg = Math.round(days.reduce((s, d) => s + d.cal, 0) / 7);
+      // Only average days where you actually logged something
+      const loggedDays = days.filter(d => d.cal > 0);
+      const avg = loggedDays.length > 0
+        ? Math.round(loggedDays.reduce((s, d) => s + d.cal, 0) / loggedDays.length)
+        : 0;
       document.getElementById('weekAvg').textContent = avg;
 
       chart.innerHTML = days.map(d => {
@@ -2571,6 +2575,35 @@ Be realistic: portion estimates carry ±20-30% uncertainty for mixed dishes. Ret
         const cls = d.dateStr === state.selectedDate ? 'trend-label selected' : 'trend-label';
         return `<div class="${cls}">${d.dow}</div>`;
       }).join('');
+    }
+
+    // ── EDIT DAILY GOAL ──
+    function editGoal() {
+      document.getElementById('sheetContent').innerHTML = `
+        <div style="font-family:'Playfair Display',serif;font-size:24px;margin-bottom:6px;">Daily Calorie Goal</div>
+        <div style="font-size:12px;color:var(--text-muted);font-weight:300;margin-bottom:18px;line-height:1.6;">
+          Set your target daily intake. The progress bar and trend chart use this as your baseline.
+        </div>
+        <label>Goal (kcal)</label>
+        <input type="number" id="goalInput" value="${state.goal}" min="500" max="10000" step="50" autofocus>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+          <button class="btn btn-outline btn-sm" onclick="closeSheet()">Cancel</button>
+          <button class="btn btn-gold btn-sm" onclick="saveGoal()">Save</button>
+        </div>
+      `;
+      document.getElementById('recipeSheet').classList.add('open');
+      setTimeout(() => document.getElementById('goalInput')?.focus(), 100);
+    }
+
+    function saveGoal() {
+      const v = parseInt(document.getElementById('goalInput').value);
+      if (!v || v < 500 || v > 10000) { showToast('Enter a value between 500 and 10000'); return; }
+      state.goal = v;
+      localStorage.setItem('bw_goal', String(v));
+      document.getElementById('goalDisplay').textContent = v;
+      closeSheet();
+      renderTodayMeals();
+      showToast('Goal updated');
     }
 
     // ── MEAL VIEW / EDIT / DELETE ──
