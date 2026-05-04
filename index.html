@@ -2573,6 +2573,165 @@ Be realistic: portion estimates carry ±20-30% uncertainty for mixed dishes. Ret
       }).join('');
     }
 
+    // ── MEAL VIEW / EDIT / DELETE ──
+    let editingMealId = null;
+    let editMealPhotoUrl = null;
+
+    function openMeal(id) {
+      const m = state.meals.find(x => x.id === id);
+      if (!m) return;
+      const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const time = new Date(m.time).toLocaleString('en-US', { weekday:'long', month:'long', day:'numeric', hour:'numeric', minute:'2-digit' });
+      document.getElementById('sheetContent').innerHTML = `
+        ${m.url ? `<img src="${m.url}" style="width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:18px;">` : ''}
+        <div style="font-family:'Playfair Display',serif;font-size:23px;margin-bottom:6px;">${esc(m.name)}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:22px;">${time}</div>
+
+        <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:20px;">
+          <div class="cal-big">${m.calories} <span>kcal</span></div>
+          <div style="flex:1">
+            <div class="macro-row" style="margin-bottom:0;">
+              <div class="macro-pill" style="padding:9px 6px;"><div class="macro-val" style="font-size:15px;">${m.protein}<span>g</span></div><div class="macro-name">Protein</div></div>
+              <div class="macro-pill" style="padding:9px 6px;"><div class="macro-val" style="font-size:15px;">${m.carbs}<span>g</span></div><div class="macro-name">Carbs</div></div>
+              <div class="macro-pill" style="padding:9px 6px;"><div class="macro-val" style="font-size:15px;">${m.fat}<span>g</span></div><div class="macro-name">Fat</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:space-between;">
+          <button class="btn btn-outline btn-sm" onclick="confirmDeleteMeal(${m.id})">Delete</button>
+          <button class="btn btn-gold btn-sm" onclick="editMeal(${m.id})">
+            <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+            Edit
+          </button>
+        </div>
+      `;
+      document.getElementById('recipeSheet').classList.add('open');
+    }
+
+    function editMeal(id) {
+      const m = state.meals.find(x => x.id === id);
+      if (!m) return;
+      editingMealId = id;
+      editMealPhotoUrl = m.url || null;
+      renderMealEditForm(m);
+    }
+
+    function renderMealEditForm(m) {
+      const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const photoBlock = editMealPhotoUrl
+        ? `<img src="${editMealPhotoUrl}" class="edit-photo-thumb">`
+        : `<div class="edit-photo-empty">📷</div>`;
+      document.getElementById('sheetContent').innerHTML = `
+        <div style="font-family:'Playfair Display',serif;font-size:22px;margin-bottom:18px;">Edit Meal</div>
+
+        <label>Photo</label>
+        <div class="edit-photo-area">
+          ${photoBlock}
+          <div class="edit-photo-actions">
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('editMealPhotoInput').click()" style="justify-content:center;">${editMealPhotoUrl ? 'Replace photo' : 'Add photo'}</button>
+            ${editMealPhotoUrl ? `<button class="btn btn-outline btn-sm" onclick="removeEditMealPhoto()" style="justify-content:center;">Remove</button>` : ''}
+            <input type="file" id="editMealPhotoInput" accept="image/*" style="display:none" onchange="handleEditMealPhoto(event)">
+          </div>
+        </div>
+
+        <label>Meal name</label>
+        <input type="text" id="editMealName" value="${esc(m.name)}" style="margin-bottom:14px;">
+
+        <div class="meta-row">
+          <div class="meta-field">
+            <label style="margin-bottom:6px;">Calories</label>
+            <input type="number" id="editMealCal" value="${m.calories}" min="0">
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <div class="meta-field">
+            <label style="margin-bottom:6px;">Protein (g)</label>
+            <input type="number" id="editMealProtein" value="${m.protein}" min="0">
+          </div>
+          <div class="meta-field">
+            <label style="margin-bottom:6px;">Carbs (g)</label>
+            <input type="number" id="editMealCarbs" value="${m.carbs}" min="0">
+          </div>
+          <div class="meta-field">
+            <label style="margin-bottom:6px;">Fat (g)</label>
+            <input type="number" id="editMealFat" value="${m.fat}" min="0">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button class="btn btn-outline btn-sm" onclick="cancelMealEdit()">Cancel</button>
+          <button class="btn btn-gold btn-sm" onclick="saveMealEdit()">Save Changes</button>
+        </div>
+      `;
+    }
+
+    async function handleEditMealPhoto(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        editMealPhotoUrl = await compressImage(file);
+        const m = state.meals.find(x => x.id === editingMealId);
+        if (m) renderMealEditForm({ ...m, ...readMealEditDraft() });
+      } catch { showToast('Could not load that photo'); }
+      e.target.value = '';
+    }
+
+    function removeEditMealPhoto() {
+      editMealPhotoUrl = null;
+      const m = state.meals.find(x => x.id === editingMealId);
+      if (m) renderMealEditForm({ ...m, ...readMealEditDraft() });
+    }
+
+    function readMealEditDraft() {
+      return {
+        name: document.getElementById('editMealName').value.trim(),
+        calories: parseInt(document.getElementById('editMealCal').value) || 0,
+        protein:  parseInt(document.getElementById('editMealProtein').value) || 0,
+        carbs:    parseInt(document.getElementById('editMealCarbs').value) || 0,
+        fat:      parseInt(document.getElementById('editMealFat').value) || 0,
+      };
+    }
+
+    function cancelMealEdit() {
+      const id = editingMealId;
+      editingMealId = null;
+      editMealPhotoUrl = null;
+      if (id) openMeal(id);
+      else closeSheet();
+    }
+
+    async function saveMealEdit() {
+      const idx = state.meals.findIndex(x => x.id === editingMealId);
+      if (idx === -1) return;
+      const draft = readMealEditDraft();
+      let url = editMealPhotoUrl;
+      if (url && url.startsWith('data:')) {
+        showToast('Uploading photo…');
+        url = await uploadToCloudinary(url);
+      }
+      state.meals[idx] = { ...state.meals[idx], ...draft, url, name: draft.name || state.meals[idx].name };
+      localStorage.setItem('bw_meals', JSON.stringify(state.meals));
+      cloudSaveMeal(state.meals[idx]);
+      const id = editingMealId;
+      editingMealId = null;
+      editMealPhotoUrl = null;
+      renderTodayMeals();
+      openMeal(id);
+      showToast('Meal updated');
+    }
+
+    function confirmDeleteMeal(id) {
+      if (!confirm('Delete this meal entry?')) return;
+      state.meals = state.meals.filter(m => m.id !== id);
+      localStorage.setItem('bw_meals', JSON.stringify(state.meals));
+      cloudDeleteMeal(id);
+      closeSheet();
+      renderTodayMeals();
+      showToast('Meal deleted');
+    }
+
     function renderTodayMeals() {
       const sel = state.selectedDate;
       const dayMeals = state.meals.filter(m => m.date === sel);
@@ -2609,7 +2768,7 @@ Be realistic: portion estimates carry ±20-30% uncertainty for mixed dishes. Ret
       list.innerHTML = dayMeals.map(m => {
         const time = new Date(m.time).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
         return `
-          <div class="meal-entry">
+          <div class="meal-entry" onclick="openMeal(${m.id})" style="cursor:pointer;">
             <div class="meal-thumb">
               ${m.url ? `<img src="${m.url}" alt="">` : '🍽'}
             </div>
